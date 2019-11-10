@@ -1,46 +1,71 @@
 #!/usr/bin/sh
-# Short script to fetch based on supplied URL, manifest file and archive.
+#
+#
+# Short script to fetch based on supplied URL and manifest file.
 # Fetches manifest, performs a sync and creates an archive with the manifest contained.
 #
-URL=$1
-MANIFEST=$2
-ARCHIVE=$3
+MANIFEST=$1
+ARCHIVE=$2
 
-printf "Fetching files based on supplied manifest"
+base='https://github.com/'
+name=' '
+path=' '
+remote=' '
+revision=' '
+scriptdir=$(PWD)
 
-repo init -u $1 \-m $2
-# This performs the same as the example command below.
-#repo init -u https://github.com/seL4/sel4test-manifest.git -m default.xml
+printf "Will fetch files based on supplied manifest"
+printf "Running here:" $scriptdir
+wget $1
 
-# sync the projects based on the revision in the manifest
-repo sync -d
+printf "Process manifest file and fetch, then archive"
 
-printf '\n'
-printf "Will create archive of projects now"
-printf '\n'
-printf "These projects will be added to the archive"
-printf '\n'
-repo list -p
-printf '\n'
+#Generate list of projects from manifest, loop through, find details and checkout versions.
 
-# This was used to test the script, could be left in if interactive required.
-#read -p "Is this list of projects correct? " response
-#case ${response} in
-#   y|Y)
-#      echo "Creating archive $3 now"
-#      repo list -p | xargs tar cvf $3
-#   ;;
-#   n|N)
-#      echo "Exiting"
-#   ;;
-#esac
+for path in $(grep "project name" ./default.xml| cut -d '"' -f 4); do
+  echo -e "Project $path"  
+  #Find project name
+  echo "Finding project name:"
+  name=$(grep "$path" ./default.xml | awk -F"name=" '{print $2}' | awk -F"\"" '{print $2}') 
+  echo $name
 
-echo "Creating archive $3 now"
-repo list -p | xargs tar cvf $3
+  #Find project path
+  echo "Finding project path:"
+  #path=$(grep "$path" ./default.xml | cut -d '"' -f 4)
+  path=$(grep "$path" ./default.xml | grep -E -o "(\".*?\")" | awk -F"path=" '{print $2}' | awk -F"\"" '{print $2}') 
+  echo $path
+
+  #Find project remote
+  echo "Finding project remote:"
+  #remote=$(grep "$path" ./default.xml | cut -d '"' -f 6)
+  remote=$(grep "$path" ./default.xml | grep -E -o "(\".*?\")" | awk -F"remote=" '{print $2}' | awk -F"\"" '{print $2}')
+  fullremote="$base$remote/$name.git"
+  echo $fullremote
+
+
+  #Find project revision
+  echo "Finding manifest revision:"
+  #revision=$(grep "$path" ./default.xml | cut -d '"' -f 8)
+  revision=$(grep "$path" ./default.xml | grep -E -o "(\".*?\")" | awk -F"revision=" '{print $2}' | awk -F"\"" '{print $2}')
+  echo $revision
+
+  echo -e "\n"
+  #Checkout
+  echo "Checking out project:" 
+  git clone $fullremote $path
+  echo "Checking out manifest revision:"
+  cd $path
+  git checkout $revision
+  cd $scriptdir
+  echo "Returning to script directory:" $scriptdir 
+
+done
+
+echo "Creating archive $2 now"
+ls | xargs tar cvf $2
 printf '\n'
 printf "Adding manifest file to archive"
 printf '\n'
-tar -vrf $3 ./.repo/.manifest.xml
 printf "Compressing archive"
 printf '\n'
-gzip $3
+gzip $2
