@@ -1,4 +1,4 @@
-##!/usr/bin/sh
+#!/usr/bin/sh
 #
 #
 # Short script to fetch based on supplied URL and manifest file.
@@ -13,13 +13,19 @@ path=' '
 remote=' '
 revision=' '
 scriptdir=$(PWD)
-tarcmd='tar cvf'
+tarcreate='tar cvf'
+taredit='tar --delete -f'
+
 
 printf "Will fetch files based on supplied manifest"
+printf '\n'
 printf "Running here:" $scriptdir
+printf '\n'
 wget $1
 
+printf '\n'
 printf "Process manifest file and fetch, then archive"
+printf '\n'
 
 #Generate list of projects from manifest, loop through, find details and checkout versions.
 
@@ -64,11 +70,11 @@ for path in $(grep "project name" ./default.xml| cut -d '"' -f 4); do
 done
 
 echo "Creating archive $2 now"
-ls | xargs $tarcmd $2
+ls | xargs $tarcreate $2
 printf '\n'
+$taredit $2 backup-manifest.sh
 printf "Adding manifest file to archive"
 printf '\n'
 printf "Compressing archive"
 printf '\n'
 gzip $2
-
