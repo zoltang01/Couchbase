@@ -1,4 +1,4 @@
-#!/usr/bin/sh
+##!/usr/bin/sh
 #
 #
 # Short script to fetch based on supplied URL and manifest file.
@@ -13,6 +13,7 @@ path=' '
 remote=' '
 revision=' '
 scriptdir=$(PWD)
+tarcmd='tar cvf'
 
 printf "Will fetch files based on supplied manifest"
 printf "Running here:" $scriptdir
@@ -56,16 +57,18 @@ for path in $(grep "project name" ./default.xml| cut -d '"' -f 4); do
   echo "Checking out manifest revision:"
   cd $path
   git checkout $revision
+  rm -Rf ./.git
   cd $scriptdir
   echo "Returning to script directory:" $scriptdir 
 
 done
 
 echo "Creating archive $2 now"
-ls | xargs tar cvf $2
+ls | xargs $tarcmd $2
 printf '\n'
 printf "Adding manifest file to archive"
 printf '\n'
 printf "Compressing archive"
 printf '\n'
 gzip $2
+
